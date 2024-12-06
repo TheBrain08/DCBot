@@ -1,4 +1,12 @@
-const { Client, Interaction, EmbedBuilder } = require("discord.js");
+const {
+  Client,
+  Interaction,
+  EmbedBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
+  ButtonBuilder,
+} = require("discord.js");
+//const handleButtonInteractions = require("../../utils/handleButtonInteractions");
 
 module.exports = {
   /**
@@ -9,7 +17,24 @@ module.exports = {
 
   callback: async (client, interaction) => {
     const user = interaction.user;
-
+    const choices = [
+      {
+        id: "0",
+        label: "previous",
+        emoji: "⏮",
+      },
+      {
+        id: "1",
+        label: "next",
+        emoji: "⏭",
+      },
+      {
+        id: "2",
+        label: "Admin",
+        emoji: "⚠",
+        style: ButtonStyle.Danger,
+      },
+    ];
     // send the help list
     try {
       const embed = new EmbedBuilder()
@@ -40,6 +65,22 @@ module.exports = {
             inline: true,
           },
 
+          // Fun commands
+          { name: "Fun stuff", value: "\u200B", inline: false },
+          { name: "iq", value: "```Shows the iq of a user.```", inline: true },
+          {
+            name: "gay",
+            value: "```Shows how gay a user is.```",
+            inline: true,
+          },
+          {
+            name: "micha",
+            value: "```Beschreibt was Micha macht```",
+            inline: true,
+          },
+          { name: "coin", value: "```Flips a coin.```", inline: true },
+          { name: "dice", value: "```Throws a dice.```", inline: true },
+
           // Moderation commands
           { name: "Moderation", value: "\u200B", inline: false },
           {
@@ -58,29 +99,53 @@ module.exports = {
             value: "```Deletes amount of messages```",
             inline: true,
           },
-
-          // Fun commands
-          { name: "Fun stuff", value: "\u200B", inline: false },
-          { name: "iq", value: "```Shows the iq of a user.```", inline: true },
           {
-            name: "gay",
-            value: "```Shows how gay a user is.```",
+            name: "welcomemessage-config",
+            value: "```Setup the welcome message.```",
             inline: true,
           },
           {
-            name: "micha",
-            value: "```Beschreibt was Micha macht```",
+            name: "welcomemessage-disable ",
+            value: "```Disables the welcome message function.```",
             inline: true,
           },
-          { name: "coin", value: "```Flips a coin.```", inline: true },
-          { name: "dice", value: "```Throws a dice.```", inline: true }
+          {
+            name: "autorole-config",
+            value: "```Setup the auto role fucntion.```",
+            inline: true,
+          },
+          {
+            name: "autorole-disable",
+            value: "```Disables the auto role function.```",
+            inline: true,
+          }
         )
         .setTimestamp()
         .setFooter({
           text: `Requested by ${user.globalName}`,
           iconURL: user.displayAvatarURL({ dynamic: true, size: 128 }),
         });
-      await interaction.reply({ embeds: [embed] });
+
+      const buttons = choices.map((choice) => {
+        return new ButtonBuilder()
+          .setCustomId(choice.id)
+          .setLabel(choice.label)
+          .setStyle(choice.style || ButtonStyle.Primary)
+          .setEmoji(choice.emoji);
+      });
+
+      const row = new ActionRowBuilder().addComponents(buttons);
+
+      //console.log("Interaction object:", interaction);
+      const message = await interaction.reply({
+        embeds: [embed],
+        components: [row],
+        fetchReply: true,
+      });
+
+      //console.log("Message returned from reply:", message);
+
+      //await handleButtonInteractions(interaction, message);
     } catch (error) {
       console.log(`There was an error trying to send the help list: ${error}`);
     }

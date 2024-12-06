@@ -16,20 +16,23 @@ client.on("ready", (c) => {
   c.user.setActivity("mit Micha`s kleinen", { type: ActivityType.Playing });
 });
 
-/**(async () => {
+(async () => {
   try {
     mongoose.set("strictQuery", false);
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connected to DB.");
 
     eventHandler(client);
+
+    client.login(process.env.TOKEN);
   } catch (error) {
     console.log(`Error: ${error}`);
   }
-})();**/
+})();
 
-eventHandler(client);
-
-client.login(process.env.TOKEN);
+/**
+ eventHandler(client);
+ client.login(process.env.TOKEN);
+ */
 
 // Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass

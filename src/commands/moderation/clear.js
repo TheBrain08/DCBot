@@ -13,10 +13,15 @@ module.exports = {
    */
   callback: async (client, interaction) => {
     const amount = interaction.options.getInteger("amount");
-    console.log(amount);
 
     if (amount < 1 || amount > 100) {
-      return interaction.reply("Please enter a number between 1 and 100.");
+      let msg = await interaction.reply(
+        "Please enter a number between 1 and 100."
+      );
+      setTimeout(() => {
+        msg.delete();
+      }, 5000);
+      return;
     }
 
     try {
@@ -24,7 +29,11 @@ module.exports = {
         limit: amount,
       });
       await interaction.channel.bulkDelete(messages);
-      return interaction.reply(`${amount} messages has been deleted.`);
+      let msg = await interaction.reply(`${amount} messages has been deleted.`);
+      setTimeout(() => {
+        msg.delete();
+      }, 5000);
+      return;
     } catch (error) {
       console.log(
         `There was an error while trying to clear messages. Error: ${error}`
