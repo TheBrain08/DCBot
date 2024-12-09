@@ -90,6 +90,11 @@ module.exports = {
             name: "rps",
             value: "```Play a round of Rock Paper Scissors.```",
             inline: true,
+          },
+          {
+            name: "tic-tac-toe",
+            value: "```Play a round of Tic Tac Toe.```",
+            inline: true,
           }
         )
         .setTimestamp()

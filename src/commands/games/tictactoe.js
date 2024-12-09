@@ -8,21 +8,6 @@ const {
   ButtonBuilder,
 } = require("discord.js");
 
-const choices = [
-  { id: "ttt0", label: "\u200B", emoji: "" },
-  { id: "ttt1", label: "\u200B", emoji: "" },
-  { id: "ttt2", label: "\u200B", emoji: "" },
-  { id: "ttt3", label: "\u200B", emoji: "" },
-  { id: "ttt4", label: "\u200B", emoji: "" },
-  { id: "ttt5", label: "\u200B", emoji: "" },
-  { id: "ttt6", label: "\u200B", emoji: "" },
-  { id: "ttt7", label: "\u200B", emoji: "" },
-  { id: "ttt8", label: "\u200B", emoji: "" },
-];
-
-let turn = "⭕";
-let winner;
-
 module.exports = {
   /**
    *
@@ -30,6 +15,21 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
+    const choices = [
+      { id: "ttt0", label: "\u200B", emoji: "" },
+      { id: "ttt1", label: "\u200B", emoji: "" },
+      { id: "ttt2", label: "\u200B", emoji: "" },
+      { id: "ttt3", label: "\u200B", emoji: "" },
+      { id: "ttt4", label: "\u200B", emoji: "" },
+      { id: "ttt5", label: "\u200B", emoji: "" },
+      { id: "ttt6", label: "\u200B", emoji: "" },
+      { id: "ttt7", label: "\u200B", emoji: "" },
+      { id: "ttt8", label: "\u200B", emoji: "" },
+    ];
+
+    let turn = "⭕";
+    let turns = 0;
+    let winner;
     try {
       const user = interaction.user;
       const targetUser = interaction.options.getUser("target-user");
@@ -52,12 +52,14 @@ module.exports = {
         .setDescription(`It's ${targetUser}'s turn.`)
         .setFields({
           name: "\u200B",
-          value: `\`\`\`
-                 |   |  
-              ---+---+--- 
-                 |   |  
-              ---+---+--- 
-                 |   |   \`\`\` `,
+          value: `
+            \`\`\`
+        \u2009 \u2009  \u2009| \u2009  \u2009\u2009| 
+        ----+----+---- 
+        \u2009 \u2009  \u2009| \u2009  \u2009\u2009| 
+        ----+----+---- 
+        \u2009 \u2009  \u2009| \u2009  \u2009\u2009| 
+          \`\`\``,
         })
         .setColor("#FFFF00")
         .setTimestamp()
@@ -125,53 +127,94 @@ module.exports = {
         return null;
       }
 
+      function generateBoard(rows) {
+        // Hilfsfunktion, um sicherzustellen, dass die emoji vorhanden ist
+        const getEmoji = (row, col) => {
+          const button = rows[row].components[col];
+          return button.data.emoji ? button.data.emoji.name : "\u2009  "; // Wenn kein Emoji, gib ein Leerzeichen zurück
+        };
+
+        let board = `\`\`\`
+        \u2009 ${getEmoji(0, 0)}\u2009| ${getEmoji(
+          0,
+          1
+        )}\u2009\u2009| ${getEmoji(0, 2)}  
+        ----+----+----
+        \u2009 ${getEmoji(1, 0)}\u2009| ${getEmoji(
+          1,
+          1
+        )}\u2009\u2009| ${getEmoji(1, 2)}  
+        ----+----+----
+        \u2009 ${getEmoji(2, 0)}\u2009| ${getEmoji(
+          2,
+          1
+        )}\u2009\u2009| ${getEmoji(2, 2)}  
+     \`\`\``;
+
+        return board;
+      }
+
       // Game loop
       while (!winner) {
-        let targetUserInteraction;
         try {
           targetUserInteraction = await reply.awaitMessageComponent({
             filter: (i) => i.user.id === targetUser.id,
             time: 30_000,
           });
+
+          const targetUserChoice = choices.find(
+            (choice) => choice.id === targetUserInteraction.customId
+          );
+
+          // Markiere den Button mit dem Emoji des Spielers und deaktiviere ihn
+          for (let i = 0; i < rows.length; i++) {
+            for (let x = 0; x < rows[i].components.length; x++) {
+              if (
+                rows[i].components[x].data.custom_id === targetUserChoice.id
+              ) {
+                rows[i].components[x] = new ButtonBuilder()
+                  .setCustomId(targetUserChoice.id)
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(true)
+                  .setEmoji(turn);
+              }
+            }
+          }
+
+          // Zähle den Zug
+          turns++;
+
+          // Überprüfe, ob es ein Unentschieden gibt (nach jedem Zug)
+          if (turns >= 9) {
+            embed.setDescription(
+              `Game over. It's a draw! Both players have had their chance and no one has won.`
+            );
+            embed.setFields({ name: "\u200B", value: generateBoard(rows) });
+            await reply.edit({ embeds: [embed], components: [] });
+            return;
+          }
+
+          await targetUserInteraction.deferUpdate(); // Antwort des Benutzers verarbeiten
         } catch (error) {
           embed.setDescription(
             `Game over. ${targetUser} did not respond in time.`
           );
+          embed.setFields({ name: "\u200B", value: generateBoard(rows) });
           await reply.edit({ embeds: [embed], components: [] });
           return;
-        }
-
-        if (!targetUserInteraction) {
-          console.log("No interaction from target user.");
-          return;
-        }
-
-        const targetUserChoice = choices.find(
-          (choice) => choice.id === targetUserInteraction.customId
-        );
-
-        // Mark the button with the user's emoji and disable it
-        for (let i = 0; i < rows.length; i++) {
-          for (let x = 0; x < rows[i].components.length; x++) {
-            if (rows[i].components[x].data.custom_id === targetUserChoice.id) {
-              rows[i].components[x] = new ButtonBuilder()
-                .setCustomId(targetUserChoice.id)
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true)
-                .setEmoji(turn);
-            }
-          }
         }
 
         // Check if the target user has won
         winner = checkWin(rows);
         if (winner) {
           embed.setDescription(`${targetUser} wins with ${winner}!`);
+          embed.setFields({ name: "\u200B", value: generateBoard(rows) });
           break;
         }
 
         turn = "❌"; // Switch turn to the next player
         embed.setDescription(`It's ${user}'s turn.`);
+        embed.setFields({ name: "\u200B", value: generateBoard(rows) });
         await reply.edit({ embeds: [embed], components: rows });
 
         let initialUserInteraction;
@@ -180,43 +223,58 @@ module.exports = {
             filter: (i) => i.user.id === user.id,
             time: 30_000,
           });
-        } catch (error) {
-          embed.setDescription(`Game over. ${user} did not respond in time.`);
-          await reply.edit({ embeds: [embed], components: [] });
-          return;
-        }
 
-        if (!initialUserInteraction) {
-          console.log("No interaction from initial user.");
-          return;
-        }
+          const initialUserChoice = choices.find(
+            (choice) => choice.id === initialUserInteraction.customId
+          );
 
-        const initialUserChoice = choices.find(
-          (choice) => choice.id === initialUserInteraction.customId
-        );
-
-        // Mark the button with the user's emoji and disable it
-        for (let i = 0; i < rows.length; i++) {
-          for (let x = 0; x < rows[i].components.length; x++) {
-            if (rows[i].components[x].data.custom_id === initialUserChoice.id) {
-              rows[i].components[x] = new ButtonBuilder()
-                .setCustomId(initialUserChoice.id)
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true)
-                .setEmoji(turn);
+          // Markiere den Button mit dem Emoji des Spielers und deaktiviere ihn
+          for (let i = 0; i < rows.length; i++) {
+            for (let x = 0; x < rows[i].components.length; x++) {
+              if (
+                rows[i].components[x].data.custom_id === initialUserChoice.id
+              ) {
+                rows[i].components[x] = new ButtonBuilder()
+                  .setCustomId(initialUserChoice.id)
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(true)
+                  .setEmoji(turn);
+              }
             }
           }
+
+          // Zähle den Zug
+          turns++;
+
+          // Überprüfe, ob es ein Unentschieden gibt (nach jedem Zug)
+          if (turns >= 9) {
+            embed.setDescription(
+              `Game over. It's a draw! Both players have had their chance and no one has won.`
+            );
+            embed.setFields({ name: "\u200B", value: generateBoard(rows) });
+            await reply.edit({ embeds: [embed], components: [] });
+            return;
+          }
+
+          await initialUserInteraction.deferUpdate(); // Antwort des Benutzers verarbeiten
+        } catch (error) {
+          embed.setDescription(`Game over. ${user} did not respond in time.`);
+          embed.setFields({ name: "\u200B", value: generateBoard(rows) });
+          await reply.edit({ embeds: [embed], components: [] });
+          return;
         }
 
         // Check if the initial user has won
         winner = checkWin(rows);
         if (winner) {
           embed.setDescription(`${user} wins with ${winner}!`);
+          embed.setFields({ name: "\u200B", value: generateBoard(rows) });
           break;
         }
 
         turn = "⭕"; // Switch turn back to target user
         embed.setDescription(`It's ${targetUser}'s turn.`);
+        embed.setFields({ name: "\u200B", value: generateBoard(rows) });
         await reply.edit({ embeds: [embed], components: rows });
       }
 
@@ -226,7 +284,7 @@ module.exports = {
         components: [],
       });
     } catch (error) {
-      console.log(`Error occurred: ${error}`);
+      console.error(`Error occurred: ${error.message}`);
       if (interaction.deferred) {
         await interaction.editReply({
           content: "An error occurred while processing the game.",
