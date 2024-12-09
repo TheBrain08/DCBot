@@ -6,7 +6,6 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
 } = require("discord.js");
-//const handleButtonInteractions = require("../../utils/handleButtonInteractions");
 
 module.exports = {
   /**
@@ -20,13 +19,13 @@ module.exports = {
     const choices = [
       {
         id: "0",
-        label: "previous",
-        emoji: "⏮",
+        label: "All",
+        style: ButtonStyle.Success,
       },
       {
         id: "1",
-        label: "next",
-        emoji: "⏭",
+        label: "Moderation",
+        style: ButtonStyle.Primary,
       },
       {
         id: "2",
@@ -39,9 +38,9 @@ module.exports = {
     try {
       const embed = new EmbedBuilder()
         .setTitle("Command list")
-        .setDescription("Here you can find all commands")
+        .setDescription("Here you can find all commands for users")
         .setColor("#8518de")
-        .addFields(
+        .setFields(
           // General commands
           { name: "For everyone", value: "\u200B", inline: false },
           {
@@ -64,6 +63,12 @@ module.exports = {
             value: "```Shows information about a user```",
             inline: true,
           },
+          {
+            name: "minecraft",
+            value:
+              "```Shows you how to get to the <#1166768191427575808> channel```",
+            inline: true,
+          },
 
           // Fun commands
           { name: "Fun stuff", value: "\u200B", inline: false },
@@ -80,43 +85,10 @@ module.exports = {
           },
           { name: "coin", value: "```Flips a coin.```", inline: true },
           { name: "dice", value: "```Throws a dice.```", inline: true },
-
-          // Moderation commands
-          { name: "Moderation", value: "\u200B", inline: false },
+          { name: "Games", value: "\u200B", inline: false },
           {
-            name: "ban",
-            value: "```Bans a member from this server.```",
-            inline: true,
-          },
-          {
-            name: "kick",
-            value: "```Kicks a member from this server.```",
-            inline: true,
-          },
-          { name: "timeout", value: "```Timeout a user```", inline: true },
-          {
-            name: "clear",
-            value: "```Deletes amount of messages```",
-            inline: true,
-          },
-          {
-            name: "welcomemessage-config",
-            value: "```Setup the welcome message.```",
-            inline: true,
-          },
-          {
-            name: "welcomemessage-disable ",
-            value: "```Disables the welcome message function.```",
-            inline: true,
-          },
-          {
-            name: "autorole-config",
-            value: "```Setup the auto role fucntion.```",
-            inline: true,
-          },
-          {
-            name: "autorole-disable",
-            value: "```Disables the auto role function.```",
+            name: "rps",
+            value: "```Play a round of Rock Paper Scissors.```",
             inline: true,
           }
         )
@@ -127,11 +99,16 @@ module.exports = {
         });
 
       const buttons = choices.map((choice) => {
-        return new ButtonBuilder()
+        const button = new ButtonBuilder()
           .setCustomId(choice.id)
           .setLabel(choice.label)
-          .setStyle(choice.style || ButtonStyle.Primary)
-          .setEmoji(choice.emoji);
+          .setStyle(choice.style || ButtonStyle.Primary);
+
+        if (choice.emoji) {
+          button.setEmoji(choice.emoji);
+        }
+
+        return button; // Der Button wird erst hier zurückgegeben
       });
 
       const row = new ActionRowBuilder().addComponents(buttons);
@@ -142,10 +119,6 @@ module.exports = {
         components: [row],
         fetchReply: true,
       });
-
-      //console.log("Message returned from reply:", message);
-
-      //await handleButtonInteractions(interaction, message);
     } catch (error) {
       console.log(`There was an error trying to send the help list: ${error}`);
     }

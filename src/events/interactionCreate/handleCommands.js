@@ -1,6 +1,5 @@
 const { devs, testServer } = require("../../../config.json");
 const getLocalCommands = require("../../utils/getLocalCommands");
-const handleButtonInteractions = require("../../utils/handleButtonInteractions"); // Importiere die Button-Logik
 
 module.exports = async (client, interaction) => {
   try {
@@ -60,11 +59,6 @@ module.exports = async (client, interaction) => {
       }
 
       await commandObject.callback(client, interaction);
-    }
-
-    // Wenn es sich um eine Button-Interaktion handelt
-    else if (interaction.isButton()) {
-      await handleButtonInteractions(interaction);
     }
   } catch (error) {
     console.log(`There was an error handling the interaction: ${error}`);

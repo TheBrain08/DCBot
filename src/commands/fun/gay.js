@@ -27,11 +27,11 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle("GAY Test")
         .setDescription(
-          "🏳️‍🌈 Der IQ von <@" +
+          "🏳️‍🌈 <@" +
             GAYuser +
-            "> `" +
+            "> ist zu`" +
             (Math.floor(Math.random() * 100) + 1) +
-            "`%"
+            "`% gay"
         )
         .setColor("#ff0000")
         .setTimestamp()
