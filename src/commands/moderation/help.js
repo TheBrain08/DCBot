@@ -24,11 +24,16 @@ module.exports = {
       },
       {
         id: "1",
+        label: "Games",
+        style: ButtonStyle.Success,
+      },
+      {
+        id: "2",
         label: "Moderation",
         style: ButtonStyle.Primary,
       },
       {
-        id: "2",
+        id: "3",
         label: "Admin",
         emoji: "⚠",
         style: ButtonStyle.Danger,
@@ -84,18 +89,7 @@ module.exports = {
             inline: true,
           },
           { name: "coin", value: "```Flips a coin.```", inline: true },
-          { name: "dice", value: "```Throws a dice.```", inline: true },
-          { name: "Games", value: "\u200B", inline: false },
-          {
-            name: "rps",
-            value: "```Play a round of Rock Paper Scissors.```",
-            inline: true,
-          },
-          {
-            name: "tic-tac-toe",
-            value: "```Play a round of Tic Tac Toe.```",
-            inline: true,
-          }
+          { name: "dice", value: "```Throws a dice.```", inline: true }
         )
         .setTimestamp()
         .setFooter({

@@ -73,7 +73,18 @@ module.exports = async (client, interaction) => {
               inline: true,
             },
             { name: "coin", value: "```Flips a coin.```", inline: true },
-            { name: "dice", value: "```Throws a dice.```", inline: true },
+            { name: "dice", value: "```Throws a dice.```", inline: true }
+          )
+          .setTimestamp()
+          .setFooter({
+            text: `Requested by ${user.globalName}`,
+            iconURL: user.displayAvatarURL({ dynamic: true, size: 128 }),
+          });
+        await sendHelpEmbed(newEmbed);
+      } else if (interaction.customId === "1") {
+        newEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+          .setDescription("Here you can find all commands for the games")
+          .setFields(
             { name: "Games", value: "\u200B", inline: false },
             {
               name: "rps",
@@ -92,7 +103,7 @@ module.exports = async (client, interaction) => {
             iconURL: user.displayAvatarURL({ dynamic: true, size: 128 }),
           });
         await sendHelpEmbed(newEmbed);
-      } else if (interaction.customId === "1") {
+      } else if (interaction.customId === "2") {
         newEmbed = EmbedBuilder.from(interaction.message.embeds[0])
           .setDescription("Here you can find all commands for moderation")
           .setFields(
@@ -121,7 +132,7 @@ module.exports = async (client, interaction) => {
             iconURL: user.displayAvatarURL({ dynamic: true, size: 128 }),
           });
         await sendHelpEmbed(newEmbed);
-      } else if (interaction.customId === "2") {
+      } else if (interaction.customId === "3") {
         if (
           !interaction.member.permissions.has(
             PermissionsBitField.Flags.Administrator

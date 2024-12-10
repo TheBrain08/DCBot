@@ -60,6 +60,7 @@ module.exports = async (client, oldState, newState) => {
               PermissionsBitField.Flags.ManageMessages,
               PermissionsBitField.Flags.ManageRoles,
               PermissionsBitField.Flags.ManageWebhooks,
+              PermissionsBitField.Flags.ManageChannels,
             ],
           },
           {
@@ -81,6 +82,7 @@ module.exports = async (client, oldState, newState) => {
                     PermissionsBitField.Flags.MoveMembers,
                     PermissionsBitField.Flags.ManageMessages,
                     PermissionsBitField.Flags.ManageRoles,
+                    PermissionsBitField.Flags.ManageChannels,
                     PermissionsBitField.Flags.ManageWebhooks,
                   ],
                 };

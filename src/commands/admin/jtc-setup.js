@@ -2,7 +2,10 @@ const {
   Client,
   Interaction,
   PermissionFlagsBits,
-  ApplicationCommandOptionType,
+  RoleSelectMenuBuilder,
+  ChannelSelectMenuBuilder,
+  ActionRowBuilder,
+  ComponentType,
   ChannelType,
 } = require("discord.js");
 const JTC = require("../../models/JTC");
@@ -15,42 +18,118 @@ module.exports = {
    */
   callback: async (client, interaction) => {
     if (!interaction.inGuild()) {
-      interaction.reply("You can only run this command inside a server.");
+      await interaction.reply({
+        content: "You can only run this command inside a server.",
+        ephemeral: true,
+      });
       return;
     }
 
-    const targetCategoryId = interaction.options.get("category").value;
-    const roleInput = interaction.options.get("roles")?.value; // Eingabe der Rollen als String
+    let selectedCategories = [];
+    let selectedRoles = [];
+    let msgToDelete = [];
+    let msg;
 
-    const roleIds = roleInput
-      ? roleInput.split(",").map((role) => role.trim())
-      : []; // Trenne Eingabe in eine Liste von IDs
+    // Channel Selection Menu
+    const categoryMenu = new ChannelSelectMenuBuilder()
+      .setCustomId(`${interaction.id}-channel`)
+      .setMinValues(1) // Benutzer muss mindestens eine Kategorie auswählen
+      .setMaxValues(3)
+      .setChannelTypes(ChannelType.GuildCategory);
 
-    if (roleIds.length > 10) {
-      interaction.reply("You can only specify up to 10 roles.");
-      return;
-    }
+    const actionRowOne = new ActionRowBuilder().setComponents(categoryMenu);
 
-    // Überprüfe, ob jede Rolle gültig ist
-    const roles = roleIds
-      .map((id) => interaction.guild.roles.cache.get(id))
-      .filter((role) => role);
+    // Send the first menu
+    msg = await interaction.reply({
+      content: "Please select a category for the Join-to-Create channel.",
+      components: [actionRowOne],
+      fetchReply: true,
+    });
+    msgToDelete.push(msg);
 
-    try {
-      await interaction.deferReply();
+    const collectorOne = interaction.channel.createMessageComponentCollector({
+      componentType: ComponentType.ChannelSelect,
+      filter: (i) =>
+        i.user.id === interaction.user.id &&
+        i.customId === `${interaction.id}-channel`,
+      time: 60_000,
+    });
 
-      let jTC = await JTC.findOne({
-        guildId: interaction.guild.id,
+    collectorOne.on("collect", async (i) => {
+      selectedCategories = i.values;
+
+      if (!selectedCategories[0]) {
+        await i.reply({
+          content: "You must select at least one category.",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      msg = await i.reply({
+        content: `You have selected categories: ${selectedCategories.join(
+          ", "
+        )}`,
+      });
+      msgToDelete.push(msg);
+
+      // Role Selection Menu
+      const roleMenu = new RoleSelectMenuBuilder()
+        .setCustomId(`${interaction.id}-role`)
+        .setMinValues(0)
+        .setMaxValues(3);
+
+      const actionRowTwo = new ActionRowBuilder().setComponents(roleMenu);
+
+      // Follow-up with the second menu
+      msg = await interaction.followUp({
+        content: "Now select roles that can use the Join-to-Create channel.",
+        components: [actionRowTwo],
+      });
+      msgToDelete.push(msg);
+
+      const collectorTwo = interaction.channel.createMessageComponentCollector({
+        componentType: ComponentType.RoleSelect,
+        filter: (j) =>
+          j.user.id === interaction.user.id &&
+          j.customId === `${interaction.id}-role`,
+        time: 60_000,
       });
 
-      if (jTC) {
-        interaction.editReply("Join to create Channel already exists");
-      } else {
+      collectorTwo.on("collect", async (j) => {
+        selectedRoles = j.values;
+
+        msg = await j.reply({
+          content: `You have selected roles: ${selectedRoles.join(", ")}`,
+        });
+        msgToDelete.push(msg);
+
+        // Prüfen, ob `categoryId` vorhanden ist
+        if (!selectedCategories[0]) {
+          await interaction.followUp({
+            content: "Category selection failed. Please try again.",
+          });
+          return;
+        }
+
+        // Prüfen, ob bereits ein Join-to-Create-Channel existiert
+        let jTC = await JTC.findOne({
+          guildId: interaction.guild.id,
+        });
+
+        if (jTC) {
+          await interaction.followUp({
+            content:
+              "A Join-to-Create channel already exists. Use `/disable-jtc` to remove it first.",
+          });
+          return;
+        }
+
         // Erstelle den Voice Channel
         const channel = await interaction.guild.channels.create({
           name: "Join to create",
           type: ChannelType.GuildVoice,
-          parent: targetCategoryId,
+          parent: selectedCategories[0],
           permissionOverwrites: [
             {
               id: interaction.guild.roles.everyone.id,
@@ -59,42 +138,43 @@ module.exports = {
           ],
         });
 
-        interaction.editReply(
-          "Join to create Channel has been created. Use `/disable-jtc` to disable and delete the Join to create channel"
-        );
-
-        // Speichern der Rollen in der Datenbank
+        // Speichere die Informationen in der Datenbank
         jTC = new JTC({
           guildId: interaction.guild.id,
-          categoryId: targetCategoryId,
+          categoryId: selectedCategories[0],
           channelId: channel.id,
-          roles: roles.map((role) => role.id), // Speichere die Rollen-IDs
+          roles: selectedRoles, // Speichere die Rollen-IDs
         });
 
         await jTC.save();
-      }
-    } catch (error) {
-      console.log(`Error while trying to configure jtc: ${error}`);
-    }
+        for (let msg of msgToDelete) {
+          await msg.delete();
+        }
+
+        const roleNames = await Promise.all(
+          selectedRoles.map(async (roleId) => {
+            const role = await interaction.guild.roles.fetch(roleId);
+            return role ? role.name : null;
+          })
+        );
+
+        // Final summary message
+        await interaction.followUp({
+          content: `The Join-to-Create channel has been created under the category: \`${
+            (
+              await interaction.guild.channels.fetch(selectedCategories)
+            ).name
+          }\`.\nSelected roles: \`${
+            roleNames.length
+              ? roleNames.filter((name) => name !== null).join(", ")
+              : "None"
+          }\`\nUse \`/disable-jtc\` to remove it.`,
+        });
+      });
+    });
   },
 
   name: "setup-jtc",
-  description: "Setup a join to create voice channel.",
-  options: [
-    {
-      name: "category",
-      description:
-        "The channel category where join-to-create channels will be created",
-      type: ApplicationCommandOptionType.Channel,
-      channelTypes: [ChannelType.GuildCategory],
-      required: true,
-    },
-    {
-      name: "roles",
-      description:
-        "Comma-separated list of role IDs to save in the database (max 10)",
-      type: ApplicationCommandOptionType.String, // Eingabe als String-Liste
-    },
-  ],
+  description: "Setup a join-to-create voice channel.",
   permissionsRequired: [PermissionFlagsBits.Administrator],
 };

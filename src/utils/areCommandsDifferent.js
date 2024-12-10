@@ -1,4 +1,10 @@
 module.exports = (existingCommand, localCommand) => {
+  // Directly use the equals method to compare the commands
+  if (!existingCommand.equals(localCommand)) {
+    return true;
+  }
+
+  // If equals doesn't cover specific fields like options or choices, you can add your own checks here.
   const areChoicesDifferent = (existingChoices, localChoices) => {
     for (const localChoice of localChoices) {
       const existingChoice = existingChoices?.find(
@@ -42,14 +48,6 @@ module.exports = (existingCommand, localCommand) => {
     }
     return false;
   };
-
-  if (
-    existingCommand.description !== localCommand.description ||
-    existingCommand.options?.length !== (localCommand.options?.length || 0) ||
-    areOptionsDifferent(existingCommand.options, localCommand.options || [])
-  ) {
-    return true;
-  }
 
   return false;
 };
